@@ -1,0 +1,19 @@
+{
+  "name": "video-cloud-hub",
+  "version": "1.0.0",
+  "description": "Plataforma de gestión de videoteca con PostgreSQL y Redis",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "pg": "^8.13.1",
+    "redis": "^4.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}

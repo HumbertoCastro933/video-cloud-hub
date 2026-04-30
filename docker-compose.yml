@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: video-cloud-app
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_NAME=video_cloud_hub
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - vch-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: video-cloud-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: video_cloud_hub
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - vch-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: video-cloud-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - vch-network
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  vch-network:
+    driver: bridge
