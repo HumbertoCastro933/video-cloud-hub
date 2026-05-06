@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Cloud Hub</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .video-card { cursor: pointer; }
+    .video-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+  </style>
+</head>
+<body>
+  <div class="container mt-4">
+    <h1 class="mb-4">🎬 Video Cloud Hub</h1>
+
+    <!-- Sección 1: Formulario de Registro -->
+    <div class="card mb-4">
+      <div class="card-header">Registrar nuevo video</div>
+      <div class="card-body">
+        <form id="videoForm">
+          <div class="mb-3">
+            <label for="titulo" class="form-label">Título</label>
+            <input type="text" class="form-control" id="titulo" required>
+          </div>
+          <div class="mb-3">
+            <label for="descripcion" class="form-label">Descripción</label>
+            <textarea class="form-control" id="descripcion" rows="2"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="categoria" class="form-label">Categoría</label>
+            <input type="text" class="form-control" id="categoria">
+          </div>
+          <div class="mb-3">
+            <label for="url_video" class="form-label">URL del video (mp4, webm...)</label>
+            <input type="url" class="form-control" id="url_video" required placeholder="https://ejemplo.com/video.mp4">
+          </div>
+          <button type="submit" class="btn btn-primary">Registrar Video</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sección 2: Galería de Videos -->
+    <div class="card mb-4">
+      <div class="card-header">Mi Galería</div>
+      <div class="card-body">
+        <div id="videoList" class="row"></div>
+      </div>
+    </div>
+
+    <!-- Sección 3: Reproductor de Video -->
+    <div class="card">
+      <div class="card-header">Reproductor</div>
+      <div class="card-body">
+        <video id="videoPlayer" controls width="100%" style="max-height: 480px;">
+          Tu navegador no soporta el elemento de video.
+        </video>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const API_BASE = window.location.origin; // Usa el mismo host
+    let currentVideoId = null;
+    const player = document.getElementById('videoPlayer');
+
+    // Cargar lista de videos al iniciar
+    async function loadVideos() {
+      try {
+        const res = await fetch(`${API_BASE}/videos`);
+        const videos = await res.json();
+        const list = document.getElementById('videoList');
+        list.innerHTML = videos.map(v => `
+          <div class="col-md-4 mb-3">
+            <div class="card video-card" onclick="playVideo(${v.id}, '${v.url_video}')">
+              <div class="card-body">
+                <h5 class="card-title">${v.titulo}</h5>
+                <p class="card-text">${v.categoria || 'Sin categoría'}</p>
+                <button class="btn btn-sm btn-outline-primary">Ver</button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Error cargando videos:', err);
+      }
+    }
+
+    // Reproducir video y cargar checkpoint
+    async function playVideo(id, url) {
+      currentVideoId = id;
+      // Limpiar intervalo anterior
+      if (window.checkpointInterval) clearInterval(window.checkpointInterval);
+
+      player.src = url;
+      player.load();
+
+      // Obtener checkpoint guardado
+      try {
+        const res = await fetch(`${API_BASE}/checkpoints/${id}`);
+        const data = await res.json();
+        if (data.second) {
+          // Saltar al segundo guardado cuando los metadatos estén listos
+          player.addEventListener('loadedmetadata', function jump() {
+            player.currentTime = data.second;
+            player.removeEventListener('loadedmetadata', jump);
+          });
+        }
+      } catch (err) {
+        console.error('Error obteniendo checkpoint:', err);
+      }
+
+      // Iniciar auto-guardado cada 5 segundos
+      player.onplay = () => {
+        window.checkpointInterval = setInterval(saveCurrentTime, 5000);
+      };
+      player.onpause = () => {
+        if (window.checkpointInterval) clearInterval(window.checkpointInterval);
+      };
+      player.onended = () => {
+        if (window.checkpointInterval) clearInterval(window.checkpointInterval);
+        saveCurrentTime(); // guardar al terminar
+      };
+    }
+
+    async function saveCurrentTime() {
+      if (currentVideoId && !player.paused) {
+        const second = player.currentTime;
+        try {
+          await fetch(`${API_BASE}/checkpoints`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ videoId: currentVideoId, second })
+          });
+        } catch (err) {
+          console.error('Error guardando checkpoint:', err);
+        }
+      }
+    }
+
+    // Formulario de registro
+    document.getElementById('videoForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const titulo = document.getElementById('titulo').value;
+      const descripcion = document.getElementById('descripcion').value;
+      const categoria = document.getElementById('categoria').value;
+      const url_video = document.getElementById('url_video').value;
+
+      try {
+        const res = await fetch(`${API_BASE}/videos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ titulo, descripcion, categoria, url_video })
+        });
+        if (res.ok) {
+          alert('Video registrado con éxito');
+          document.getElementById('videoForm').reset();
+          loadVideos(); // actualizar lista
+        } else {
+          const err = await res.json();
+          alert('Error: ' + err.error);
+        }
+      } catch (err) {
+        alert('Error de conexión');
+      }
+    });
+
+    // Cargar videos al abrir la página
+    loadVideos();
+  </script>
+</body>
+</html>

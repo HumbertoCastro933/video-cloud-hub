@@ -6,13 +6,18 @@ const { connectRedis } = require('./src/config/redis');
 // Importar rutas
 const videoRoutes = require('./src/routes/videoRoutes');
 const playlistRoutes = require('./src/routes/playlistRoutes');
+const checkpointRoutes = require('./src/routes/checkpointRoutes');
 
 const app = express();
 app.use(express.json());
 
-// Rutas
+// Servir el frontend estático
+app.use(express.static('public'));
+
+// Montar las rutas de la API
 app.use('/videos', videoRoutes);
 app.use('/playlists', playlistRoutes);
+app.use('/checkpoints', checkpointRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -21,8 +26,8 @@ app.get('/health', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
-  console.log(`🚀 Servidor en http://localhost:${PORT}`);
-  // Probar conexión a PostgreSQL
+  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  // Probar PostgreSQL
   try {
     const pgRes = await pool.query('SELECT NOW()');
     console.log('✅ PostgreSQL conectado:', pgRes.rows[0].now);
