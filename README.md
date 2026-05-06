@@ -21,3 +21,10 @@ Cómo usar la aplicación
 Abrir el navegador: Ve a http://localhost:3000
 
 Registrar un video: Usa el formulario para agregar un título y una URL de video (puedes usar un archivo .mp4 que metas en la carpeta /public o un link directo de internet).
+
+Videos de ejemplos: 
+En la carpeta Public se encuentra un video llamado Perro.mp4
+se puede usar para registrar en el formulario
+
+url video de prueba: 
+https://vjs.zencdn.net/v/oceans.mp4

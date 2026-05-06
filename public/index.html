@@ -33,7 +33,7 @@
           </div>
           <div class="mb-3">
             <label for="url_video" class="form-label">URL del video (mp4, webm...)</label>
-            <input type="url" class="form-control" id="url_video" required placeholder="https://ejemplo.com/video.mp4">
+            <input type="text" class="form-control" id="url_video" required placeholder="https://ejemplo.com/video.mp4">
           </div>
           <button type="submit" class="btn btn-primary">Registrar Video</button>
         </form>
@@ -111,22 +111,28 @@
         console.error('Error obteniendo checkpoint:', err);
       }
 
-      // Iniciar auto-guardado cada 5 segundos
+      // Iniciar auto-guardado cada 2 segundos 
       player.onplay = () => {
-        window.checkpointInterval = setInterval(saveCurrentTime, 5000);
+        window.checkpointInterval = setInterval(saveCurrentTime, 2000);
       };
+      
       player.onpause = () => {
         if (window.checkpointInterval) clearInterval(window.checkpointInterval);
+        saveCurrentTime(); 
       };
+      
       player.onended = () => {
         if (window.checkpointInterval) clearInterval(window.checkpointInterval);
-        saveCurrentTime(); // guardar al terminar
+        saveCurrentTime(); 
       };
     }
 
     async function saveCurrentTime() {
-      if (currentVideoId && !player.paused) {
+
+      if (currentVideoId && player.currentTime > 0) {
         const second = player.currentTime;
+        console.log("Guardando en Redis segundo:", second); 
+        
         try {
           await fetch(`${API_BASE}/checkpoints`, {
             method: 'POST',
